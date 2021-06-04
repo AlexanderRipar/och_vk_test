@@ -31,6 +31,6 @@ err_info check_(VkResult error, uint32_t line) noexcept { return { error, line }
 
 err_info check_(err_info error, uint32_t line) noexcept { return error; line; }
 
-#define check(macro_error_cause) if (err_info macro_defined_result = check_((macro_error_cause), static_cast<uint32_t>(__LINE__))) return macro_defined_result;
+#define check(macro_error_cause) { if (err_info macro_defined_result = check_((macro_error_cause), static_cast<uint32_t>(__LINE__))) return macro_defined_result; };
 
 #define ERROR(num) err_info(static_cast<uint64_t>(num), __LINE__)

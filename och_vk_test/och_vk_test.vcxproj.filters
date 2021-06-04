@@ -16,6 +16,9 @@
     <Filter Include="och_lib">
       <UniqueIdentifier>{58ec9fa0-8a61-47f9-9024-380f87933e1d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{e83856c9-126e-40fe-8173-d6aea3c00c0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -68,5 +71,16 @@
     <ClInclude Include="error_handling.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="compile_shaders.bat">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
