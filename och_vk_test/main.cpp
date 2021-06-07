@@ -80,9 +80,9 @@ struct hello_vulkan
 
 	struct swapchain_support_details
 	{
-		VkSurfaceCapabilitiesKHR capabilites;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> present_modes;
+		VkSurfaceCapabilitiesKHR capabilites{};
+		std::vector<VkSurfaceFormatKHR> formats{};
+		std::vector<VkPresentModeKHR> present_modes{};
 	};
 
 	uint32_t window_width = 1440;
@@ -988,6 +988,8 @@ struct hello_vulkan
 		check(create_vk_swapchain_framebuffers());
 
 		check(create_vk_command_buffers());
+
+		return {};
 	}
 
 	void cleanup_swapchain()

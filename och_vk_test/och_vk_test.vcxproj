@@ -101,6 +101,19 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.176.1\Lib;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Recompiling SPIR-V shaders</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -122,6 +135,19 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.176.1\Lib;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Recompiling SPIR-V shaders</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -138,6 +164,19 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.176.1\Lib;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Recompiling SPIR-V shaders</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -159,6 +198,19 @@
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.176.1\Lib;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Recompiling SPIR-V shaders</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\och_lib\och_lib\och_fio.cpp" />
