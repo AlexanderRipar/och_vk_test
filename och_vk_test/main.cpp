@@ -3,8 +3,11 @@
 
 #include <cstdint>
 #include <vector>
+
 #include "och_fmt.h"
 #include "och_fio.h"
+#include "och_matmath.h"
+
 #include "error_handling.h"
 
 #define OCH_VALIDATE
@@ -85,6 +88,23 @@ struct hello_vulkan
 		std::vector<VkPresentModeKHR> present_modes{};
 	};
 
+	struct vertex
+	{
+		vec2 pos;
+		vec3 col;
+
+		static constexpr VkVertexInputBindingDescription binding_desc{ 0, 5, VK_VERTEX_INPUT_RATE_VERTEX };
+
+		static constexpr VkVertexInputAttributeDescription attribute_descs[]{ {0, 0, VK_FORMAT_R32G32_SFLOAT, 0}, {1, 0, VK_FORMAT_R32G32B32_SFLOAT, 2} };
+	};
+
+	static constexpr vertex vertices[]
+	{
+		{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+		{{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
+	};
+
 	uint32_t window_width = 1440;
 	uint32_t window_height = 810;
 
@@ -128,6 +148,8 @@ struct hello_vulkan
 	VkSemaphore vk_render_complete_semaphores[max_frames_in_flight];
 	VkFence vk_inflight_fences[max_frames_in_flight];
 	std::vector<VkFence> vk_images_inflight_fences;
+
+	VkBuffer vk_vertex_buffer = nullptr;
 
 	size_t curr_frame = 0;
 
@@ -188,6 +210,8 @@ struct hello_vulkan
 		check(create_vk_swapchain_framebuffers());
 
 		check(create_vk_command_pool());
+
+		check(create_vk_vertex_buffer());
 
 		check(create_vk_command_buffers());
 
@@ -670,10 +694,10 @@ struct hello_vulkan
 		
 		VkPipelineVertexInputStateCreateInfo vert_input_info{};
 		vert_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vert_input_info.vertexBindingDescriptionCount = 0;
-		vert_input_info.pVertexBindingDescriptions = nullptr;
-		vert_input_info.vertexAttributeDescriptionCount = 0;
-		vert_input_info.pVertexAttributeDescriptions = nullptr;
+		vert_input_info.vertexBindingDescriptionCount = 1;
+		vert_input_info.pVertexBindingDescriptions = &vertex::binding_desc;
+		vert_input_info.vertexAttributeDescriptionCount = 2;
+		vert_input_info.pVertexAttributeDescriptions = vertex::attribute_descs;
 
 		VkPipelineInputAssemblyStateCreateInfo input_asm_info{};
 		input_asm_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -821,6 +845,21 @@ struct hello_vulkan
 		create_info.queueFamilyIndex = family_indices.graphics_idx;
 		
 		check(vkCreateCommandPool(vk_device, &create_info, nullptr, &vk_command_pool));
+
+		return {};
+	}
+
+	err_info create_vk_vertex_buffer()
+	{
+		VkBufferCreateInfo info{};
+		info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		info.size = sizeof(vertices);
+		info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		info.queueFamilyIndexCount = 0;
+		info.pQueueFamilyIndices = nullptr;
+
+		check(vkCreateBuffer(vk_device, &info, nullptr, &vk_vertex_buffer));
 
 		return {};
 	}
@@ -1027,6 +1066,8 @@ struct hello_vulkan
 	void cleanup()
 	{
 		cleanup_swapchain();
+
+		vkDestroyBuffer(vk_device, vk_vertex_buffer, nullptr);
 
 		for(auto& sem : vk_render_complete_semaphores)
 			vkDestroySemaphore(vk_device, sem, nullptr);

@@ -71,6 +71,9 @@
     <ClInclude Include="error_handling.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="och_matmath.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.frag">
