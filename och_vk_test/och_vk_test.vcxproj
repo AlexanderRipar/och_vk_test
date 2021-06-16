@@ -92,7 +92,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -108,8 +108,8 @@
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
-C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\frag.spv</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Recompiling SPIR-V shaders</Message>
@@ -123,7 +123,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\source\repos\och_lib\och_lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -142,8 +142,8 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
-C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\frag.spv</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Recompiling SPIR-V shaders</Message>
@@ -155,7 +155,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -171,8 +171,8 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
-C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\frag.spv</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Recompiling SPIR-V shaders</Message>
@@ -186,7 +186,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\source\repos\och_lib\och_lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -205,8 +205,8 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\vert.spv
-C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\frag.spv</Command>
+      <Command>C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.vert -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\vert.spv
+C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\shader.frag -o C:\Users\alex_2\source\repos\och_vk_test\och_vk_test\shaders\frag.spv</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Recompiling SPIR-V shaders</Message>
@@ -218,6 +218,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
     <ClCompile Include="..\..\och_lib\och_lib\och_time.cpp" />
     <ClCompile Include="..\..\och_lib\och_lib\och_utf8.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="och_bmp_header.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\och_lib\och_lib\och_constexpr_util.h" />
@@ -234,9 +235,11 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
     <ClInclude Include="och_matmath.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="compile_shaders.bat" />
-    <None Include="shader.frag" />
-    <None Include="shader.vert" />
+    <None Include="shaders\compile_shaders.bat" />
+    <None Include="shaders\frag.spv" />
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
+    <None Include="shaders\vert.spv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

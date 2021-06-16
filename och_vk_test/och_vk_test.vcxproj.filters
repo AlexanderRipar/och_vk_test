@@ -36,6 +36,9 @@
     <ClCompile Include="..\..\och_lib\och_lib\och_utf8.cpp">
       <Filter>och_lib</Filter>
     </ClCompile>
+    <ClCompile Include="och_bmp_header.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\och_lib\och_lib\och_virtual_keys.h">
@@ -76,13 +79,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.frag">
+    <None Include="shaders\vert.spv">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shader.vert">
+    <None Include="shaders\compile_shaders.bat">
       <Filter>shaders</Filter>
     </None>
-    <None Include="compile_shaders.bat">
+    <None Include="shaders\frag.spv">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shader.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\shader.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
