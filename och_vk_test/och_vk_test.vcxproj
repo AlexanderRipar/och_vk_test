@@ -233,6 +233,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
     <ClInclude Include="..\..\och_lib\och_lib\och_virtual_keys.h" />
     <ClInclude Include="error_handling.h" />
     <ClInclude Include="och_matmath.h" />
+    <ClInclude Include="tiny_obj_loader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile_shaders.bat" />

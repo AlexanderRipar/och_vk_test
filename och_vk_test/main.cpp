@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <unordered_map>
 
 #include "och_fmt.h"
 #include "och_fio.h"
@@ -10,11 +11,17 @@
 
 #include "error_handling.h"
 #include "och_bmp_header.h"
-
 #include "och_matmath.h"
+
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm.hpp>
 #include <gtc\matrix_transform.hpp>
+#define GLM_ENABLE_EXTERIMANTAL
+#include <gtx\hash.hpp>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 #define OCH_VALIDATE
 
@@ -65,6 +72,70 @@ VkDebugUtilsMessengerCreateInfoEXT populate_messenger_create_info() noexcept
 	return create_info;
 }
 
+struct queue_family_indices
+{
+	uint32_t graphics_idx = ~0u;
+	uint32_t compute_idx = ~0u;
+	uint32_t transfer_idx = ~0u;
+	uint32_t present_idx = ~0u;
+
+	operator bool() const noexcept { return graphics_idx != ~0u && compute_idx != ~0u && transfer_idx != ~0u && present_idx != ~0u; }
+
+	bool discrete_present_family() const noexcept { return graphics_idx != present_idx; }
+};
+
+struct swapchain_support_details
+{
+	VkSurfaceCapabilitiesKHR capabilites{};
+	std::vector<VkSurfaceFormatKHR> formats{};
+	std::vector<VkPresentModeKHR> present_modes{};
+};
+
+struct uniform_buffer_obj
+{
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 projection;
+};
+
+struct vertex
+{
+	glm::vec3 pos;
+	glm::vec3 col;
+	glm::vec2 tex_pos;
+
+	bool operator==(const vertex& rhs) const noexcept
+	{
+		return pos == rhs.pos && col == rhs.col && tex_pos == rhs.tex_pos;
+	}
+
+	static constexpr VkVertexInputBindingDescription binding_desc{ 0, 32, VK_VERTEX_INPUT_RATE_VERTEX };
+
+	static constexpr VkVertexInputAttributeDescription attribute_descs[]{
+		{ 0, 0, VK_FORMAT_R32G32B32_SFLOAT,  0 },
+		{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12 },
+		{ 2, 0, VK_FORMAT_R32G32_SFLOAT   , 24 },
+	};
+};
+
+static_assert(vertex::binding_desc.stride == sizeof(vertex));
+static_assert(vertex::attribute_descs[0].offset == offsetof(vertex, vertex::pos));
+static_assert(vertex::attribute_descs[1].offset == offsetof(vertex, vertex::col));
+static_assert(vertex::attribute_descs[2].offset == offsetof(vertex, vertex::tex_pos));
+
+namespace std {
+	template<> struct hash<vertex> {
+		size_t operator()(vertex const& vertex) const {
+			return (
+				(hash<glm::vec3>()(vertex.pos) ^
+				(hash<glm::vec3>()(vertex.col) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.tex_pos) << 1);
+		}
+	};
+}
+
+
+
 struct hello_vulkan
 {
 	static constexpr uint32_t max_frames_in_flight = 2;
@@ -75,55 +146,9 @@ struct hello_vulkan
 
 	static constexpr const char* required_device_extensions[]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	struct queue_family_indices
-	{
-		uint32_t graphics_idx = ~0u;
-		uint32_t compute_idx = ~0u;
-		uint32_t transfer_idx = ~0u;
-		uint32_t present_idx = ~0u;
+	std::vector<vertex> vertices;
 
-		operator bool() const noexcept { return graphics_idx != ~0u && compute_idx != ~0u && transfer_idx != ~0u && present_idx != ~0u; }
-
-		bool discrete_present_family() const noexcept { return graphics_idx != present_idx; }
-	};
-
-	struct swapchain_support_details
-	{
-		VkSurfaceCapabilitiesKHR capabilites{};
-		std::vector<VkSurfaceFormatKHR> formats{};
-		std::vector<VkPresentModeKHR> present_modes{};
-	};
-
-	struct vertex
-	{
-		glm::vec2 pos;
-		glm::vec3 col;
-		glm::vec2 tex_pos;
-
-		static constexpr VkVertexInputBindingDescription binding_desc{ 0, 28, VK_VERTEX_INPUT_RATE_VERTEX };
-
-		static constexpr VkVertexInputAttributeDescription attribute_descs[]{
-			{ 0, 0, VK_FORMAT_R32G32_SFLOAT   ,  0 },
-			{ 1, 0, VK_FORMAT_R32G32B32_SFLOAT,  8 },
-			{ 2, 0, VK_FORMAT_R32G32_SFLOAT   , 20 },
-		};
-	};
-
-	struct uniform_buffer_obj
-	{
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
-
-	static constexpr vertex vertices[]{
-	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-	};
-
-	static constexpr uint16_t indices[]{ 0, 1, 2, 2, 3, 0 };
+	std::vector<uint32_t> indices;
 
 	uint32_t window_width = 1440;
 	uint32_t window_height = 810;
@@ -195,6 +220,12 @@ struct hello_vulkan
 
 	VkSampler vk_texture_sampler = nullptr;
 
+	VkImage vk_depth_image = nullptr;
+
+	VkDeviceMemory vk_depth_image_memory = nullptr;
+
+	VkImageView vk_depth_image_view = nullptr;
+
 	size_t curr_frame = 0;
 
 	bool framebuffer_resized = false;
@@ -253,15 +284,19 @@ struct hello_vulkan
 
 		check(create_vk_graphics_pipeline());
 
-		check(create_vk_swapchain_framebuffers());
-
 		check(create_vk_command_pool());
+
+		check(create_vk_depth_resources());
+
+		check(create_vk_swapchain_framebuffers());
 
 		check(create_vk_texture_image());
 
 		check(create_vk_texture_image_view());
 
 		check(create_vk_texture_sampler());
+
+		check(load_obj_model());
 
 		check(create_vk_vertex_buffer());
 
@@ -667,24 +702,7 @@ struct hello_vulkan
 		vk_swapchain_views.resize(vk_swapchain_images.size());
 
 		for (uint32_t i = 0; i != static_cast<uint32_t>(vk_swapchain_images.size()); ++i)
-		{
-			VkImageViewCreateInfo create_info{};
-			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			create_info.image = vk_swapchain_images[i];
-			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			create_info.format = vk_swapchain_format;
-			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			create_info.subresourceRange.baseMipLevel = 0;
-			create_info.subresourceRange.levelCount = 1;
-			create_info.subresourceRange.baseArrayLayer = 0;
-			create_info.subresourceRange.layerCount = 1;
-
-			check(vkCreateImageView(vk_device, &create_info, nullptr, &vk_swapchain_views[i]));
-		}
+			check(allocate_image_view(vk_swapchain_images[i], vk_swapchain_format, VK_IMAGE_ASPECT_COLOR_BIT, vk_swapchain_views[i]));
 
 		return {};
 	}
@@ -701,33 +719,50 @@ struct hello_vulkan
 		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+		VkAttachmentDescription depth_attachment{};
+		depth_attachment.format = VK_FORMAT_D32_SFLOAT;
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 		VkAttachmentReference color_ref{};
 		color_ref.attachment = 0;
 		color_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depth_ref{};
+		depth_ref.attachment = 1;
+		depth_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_ref;
+		subpass.pDepthStencilAttachment = &depth_ref;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		VkRenderPassCreateInfo pass_info{};
-		pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		pass_info.attachmentCount = 1;
-		pass_info.pAttachments = &color_attachment;
-		pass_info.subpassCount = 1;
-		pass_info.pSubpasses = &subpass;
-		pass_info.dependencyCount = 1;
-		pass_info.pDependencies = &dependency;
+		VkAttachmentDescription attachment_descs[]{ color_attachment, depth_attachment };
 
-		check(vkCreateRenderPass(vk_device, &pass_info, nullptr, &vk_render_pass));
+		VkRenderPassCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		create_info.attachmentCount = static_cast<uint32_t>(sizeof(attachment_descs) / sizeof(*attachment_descs));
+		create_info.pAttachments = attachment_descs;
+		create_info.subpassCount = 1;
+		create_info.pSubpasses = &subpass;
+		create_info.dependencyCount = 1;
+		create_info.pDependencies = &dependency;
+
+		check(vkCreateRenderPass(vk_device, &create_info, nullptr, &vk_render_pass));
 
 		return {};
 	}
@@ -861,6 +896,18 @@ struct hello_vulkan
 		dynamic_info.dynamicStateCount = sizeof(dynamic_states) / sizeof(*dynamic_states);
 		dynamic_info.pDynamicStates = dynamic_states;
 
+		VkPipelineDepthStencilStateCreateInfo depth_stencil_info{};
+		depth_stencil_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depth_stencil_info.depthTestEnable = VK_TRUE;
+		depth_stencil_info.depthWriteEnable = VK_TRUE;
+		depth_stencil_info.depthCompareOp = VK_COMPARE_OP_LESS;
+		depth_stencil_info.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil_info.minDepthBounds = 0.0F;
+		depth_stencil_info.maxDepthBounds = 1.0F;
+		depth_stencil_info.stencilTestEnable = VK_FALSE;
+		depth_stencil_info.front = {};
+		depth_stencil_info.back = {};
+
 		VkPipelineLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layout_info.setLayoutCount = 1;
@@ -880,7 +927,7 @@ struct hello_vulkan
 		pipeline_info.pViewportState = &view_info;
 		pipeline_info.pRasterizationState = &raster_info;
 		pipeline_info.pMultisampleState = &multisample_info;
-		pipeline_info.pDepthStencilState = nullptr;
+		pipeline_info.pDepthStencilState = &depth_stencil_info;
 		pipeline_info.pColorBlendState = &blend_info;
 		pipeline_info.pDynamicState = nullptr;
 		pipeline_info.layout = vk_pipeline_layout;
@@ -898,31 +945,6 @@ struct hello_vulkan
 		return {};
 	}
 	
-	err_info create_vk_swapchain_framebuffers()
-	{
-		vk_swapchain_framebuffers.resize(vk_swapchain_views.size());
-
-		for (size_t i = 0; i != vk_swapchain_views.size(); ++i)
-		{
-			VkImageView attachments[]{ vk_swapchain_views[i] };
-
-			VkFramebufferCreateInfo create_info{};
-			create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			create_info.renderPass = vk_render_pass;
-			create_info.attachmentCount = 1;
-			create_info.pAttachments = attachments;
-			create_info.width = vk_swapchain_extent.width;
-			create_info.height = vk_swapchain_extent.height;
-			create_info.layers = 1;
-
-			check(vkCreateFramebuffer(vk_device, &create_info, nullptr, &vk_swapchain_framebuffers[i]));
-
-
-		}
-
-		return {};
-	}
-
 	err_info create_vk_command_pool()
 	{
 		queue_family_indices family_indices;
@@ -938,9 +960,45 @@ struct hello_vulkan
 		return {};
 	}
 
+	err_info create_vk_depth_resources()
+	{
+		check(allocate_image(vk_swapchain_extent.width, vk_swapchain_extent.height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_depth_image, vk_depth_image_memory));
+
+		check(allocate_image_view(vk_depth_image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, vk_depth_image_view));
+
+		check(transition_image_layout(vk_depth_image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+
+		return {};
+	}
+
+	err_info create_vk_swapchain_framebuffers()
+	{
+		vk_swapchain_framebuffers.resize(vk_swapchain_views.size());
+
+		for (size_t i = 0; i != vk_swapchain_views.size(); ++i)
+		{
+			VkImageView attachments[]{ vk_swapchain_views[i], vk_depth_image_view };
+
+			VkFramebufferCreateInfo create_info{};
+			create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			create_info.renderPass = vk_render_pass;
+			create_info.attachmentCount = static_cast<uint32_t>(sizeof(attachments) / sizeof(*attachments));
+			create_info.pAttachments = attachments;
+			create_info.width = vk_swapchain_extent.width;
+			create_info.height = vk_swapchain_extent.height;
+			create_info.layers = 1;
+
+			check(vkCreateFramebuffer(vk_device, &create_info, nullptr, &vk_swapchain_framebuffers[i]));
+
+
+		}
+
+		return {};
+	}
+
 	err_info create_vk_texture_image()
 	{
-		och::mapped_file<bitmap_header> texture_file(och::stringview("textures/basic_texture.bmp"), och::fio::access_read, och::fio::open_normal, och::fio::open_fail);
+		och::mapped_file<bitmap_header> texture_file(och::stringview("textures/viking_room.bmp"), och::fio::access_read, och::fio::open_normal, och::fio::open_fail);
 
 		if (!texture_file)
 			return ERROR(1);
@@ -949,7 +1007,7 @@ struct hello_vulkan
 
 		const uint8_t* pixels = header.pixel_data();
 
-		const size_t pixel_cnt = header.width * header.height;
+		const size_t pixel_cnt = static_cast<size_t>(header.width * header.height);
 
 		if (header.bits_per_pixel == 24)
 		{
@@ -970,8 +1028,6 @@ struct hello_vulkan
 
 		VkBuffer staging_buf;
 		VkDeviceMemory staging_buf_mem;
-
-		och::print("Pixel count: {}\n", pixel_cnt);
 
 		check(allocate_buffer(pixel_cnt * 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buf, staging_buf_mem));
 
@@ -1006,22 +1062,7 @@ struct hello_vulkan
 
 	err_info create_vk_texture_image_view()
 	{
-		VkImageViewCreateInfo create_info{};
-		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		create_info.image = vk_texture_image;
-		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.format = VK_FORMAT_B8G8R8A8_SRGB;
-		create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		create_info.subresourceRange.baseMipLevel = 0;
-		create_info.subresourceRange.levelCount = 1;
-		create_info.subresourceRange.baseArrayLayer = 0;
-		create_info.subresourceRange.layerCount = 1;
-
-		check(vkCreateImageView(vk_device, &create_info, nullptr, &vk_texture_image_view));
+		check(allocate_image_view(vk_texture_image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, vk_texture_image_view));
 
 		return {};
 	}
@@ -1055,25 +1096,74 @@ struct hello_vulkan
 		return {};
 	}
 
+	err_info load_obj_model()
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "models/viking_room.obj"))
+			return ERROR(1);
+
+		och::print("Loading .obj File:\n\tWarning: {}\n\tError: {}\n", warn.c_str(), err.c_str());
+
+		std::unordered_map<vertex, uint32_t> uniqueVertices{};
+
+		for (const auto& shape : shapes)
+		{
+			for (const auto& index : shape.mesh.indices)
+			{
+				vertex vert{};
+
+				vert.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2],
+				};
+
+				vert.tex_pos = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1],
+				};
+
+				vert.col = { 1.0f, 1.0f, 1.0f };
+
+				if (uniqueVertices.count(vert) == 0)
+				{
+					uniqueVertices[vert] = static_cast<uint32_t>(vertices.size());
+
+					vertices.push_back(vert);
+				}
+				
+				indices.push_back(uniqueVertices[vert]);
+			}
+		}
+
+		och::print("\tTotal number of vertices loaded: {}\n\tTotal number of indices loaded: {}\n\n", vertices.size(), indices.size());
+
+		return {};
+	}
+
 	err_info create_vk_vertex_buffer()
 	{
 		VkBuffer staging_buf = nullptr;
 
 		VkDeviceMemory staging_buf_mem = nullptr;
 
-		check(allocate_buffer(sizeof(vertices), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buf, staging_buf_mem));
+		check(allocate_buffer(vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buf, staging_buf_mem));
 
 		void* staging_data = nullptr;
 
-		check(vkMapMemory(vk_device, staging_buf_mem, 0, sizeof(vertices), 0, &staging_data));
+		check(vkMapMemory(vk_device, staging_buf_mem, 0, vertices.size() * sizeof(vertices[0]), 0, &staging_data));
 
-		memcpy(staging_data, vertices, sizeof(vertices));
+		memcpy(staging_data, vertices.data(), vertices.size() * sizeof(vertices[0]));
 
 		vkUnmapMemory(vk_device, staging_buf_mem);
 
-		check(allocate_buffer(sizeof(vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_vertex_buffer, vk_vertex_buffer_memory));
+		check(allocate_buffer(vertices.size() * sizeof(vertices[0]), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_vertex_buffer, vk_vertex_buffer_memory));
 
-		copy_buffer_to_buffer(vk_vertex_buffer, staging_buf, sizeof(vertices));
+		copy_buffer_to_buffer(vk_vertex_buffer, staging_buf, vertices.size() * sizeof(vertices[0]));
 
 		vkDestroyBuffer(vk_device, staging_buf, nullptr);
 
@@ -1088,19 +1178,19 @@ struct hello_vulkan
 
 		VkDeviceMemory staging_buf_mem = nullptr;
 
-		check(allocate_buffer(sizeof(indices), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, staging_buf, staging_buf_mem));
+		check(allocate_buffer(indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, staging_buf, staging_buf_mem));
 
 		void* data = nullptr;
 
-		check(vkMapMemory(vk_device, staging_buf_mem, 0, sizeof(indices), 0, &data));
+		check(vkMapMemory(vk_device, staging_buf_mem, 0, indices.size() * sizeof(indices[0]), 0, &data));
 
-		memcpy(data, indices, sizeof(indices));
+		memcpy(data, indices.data(), indices.size() * sizeof(indices[0]));
 
 		vkUnmapMemory(vk_device, staging_buf_mem);
 
-		check(allocate_buffer(sizeof(indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_index_buffer, vk_index_buffer_memory));
+		check(allocate_buffer(indices.size() * sizeof(indices[0]), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_index_buffer, vk_index_buffer_memory));
 
-		check(copy_buffer_to_buffer(vk_index_buffer, staging_buf, sizeof(indices)));
+		check(copy_buffer_to_buffer(vk_index_buffer, staging_buf, indices.size() * sizeof(indices[0])));
 
 		vkDestroyBuffer(vk_device, staging_buf, nullptr);
 
@@ -1215,7 +1305,7 @@ struct hello_vulkan
 			
 			check(vkBeginCommandBuffer(vk_command_buffers[i], &buffer_beg_info));
 
-			VkClearValue clear_color{ 0.0F, 0.0F, 0.0F, 1.0F };
+			VkClearValue clear_values[]{ {0.0F, 0.0F, 0.0F, 1.0F}, {1.0F, 0.0F, 0.0F, 0.0F} };
 
 			VkRenderPassBeginInfo pass_beg_info{};
 			pass_beg_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1223,8 +1313,8 @@ struct hello_vulkan
 			pass_beg_info.framebuffer = vk_swapchain_framebuffers[i];
 			pass_beg_info.renderArea.offset = { 0, 0 };
 			pass_beg_info.renderArea.extent = vk_swapchain_extent;
-			pass_beg_info.clearValueCount = 1;
-			pass_beg_info.pClearValues = &clear_color;
+			pass_beg_info.clearValueCount = static_cast<uint32_t>(sizeof(clear_values) / sizeof(*clear_values));
+			pass_beg_info.pClearValues = clear_values;
 
 			vkCmdBeginRenderPass(vk_command_buffers[i], &pass_beg_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1233,11 +1323,11 @@ struct hello_vulkan
 				VkDeviceSize offsets[]{ 0 };
 				vkCmdBindVertexBuffers(vk_command_buffers[i], 0, 1, &vk_vertex_buffer, offsets);
 
-				vkCmdBindIndexBuffer(vk_command_buffers[i], vk_index_buffer, 0, VK_INDEX_TYPE_UINT16);
+				vkCmdBindIndexBuffer(vk_command_buffers[i], vk_index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
 				vkCmdBindDescriptorSets(vk_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline_layout, 0, 1, &vk_descriptor_sets[i], 0, nullptr);
 
-				vkCmdDrawIndexed(vk_command_buffers[i], sizeof(indices) / sizeof(*indices), 1, 0, 0, 0);
+				vkCmdDrawIndexed(vk_command_buffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(vk_command_buffers[i]);
 
@@ -1420,6 +1510,12 @@ struct hello_vulkan
 	{
 		cleanup_swapchain();
 
+		vkDestroyImageView(vk_device, vk_depth_image_view, nullptr);
+
+		vkDestroyImage(vk_device, vk_depth_image, nullptr);
+
+		vkFreeMemory(vk_device, vk_depth_image_memory, nullptr);
+
 		vkDestroySampler(vk_device, vk_texture_sampler, nullptr);
 
 		vkDestroyImageView(vk_device, vk_texture_image_view, nullptr);
@@ -1472,6 +1568,30 @@ struct hello_vulkan
 		glfwDestroyWindow(window);
 
 		glfwTerminate();
+	}
+
+	err_info find_first_supported_format(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags required_features, VkFormat& out_format)
+	{
+		for (auto format : candidates)
+		{
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(vk_physical_device, format, &props);
+
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & required_features) == required_features)
+			{
+				out_format = format;
+
+				return {};
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & required_features) == required_features)
+			{
+				out_format = format;
+
+				return {};
+			}
+		}
+
+		return ERROR(1);
 	}
 
 	err_info create_shader_module_from_file(const char* filename, VkShaderModule& out_shader_module)
@@ -1650,6 +1770,28 @@ struct hello_vulkan
 		return {};
 	}
 	
+	err_info allocate_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_mask, VkImageView& out_image_view)
+	{
+		VkImageViewCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		create_info.image = image;
+		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		create_info.format = format;
+		create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		create_info.subresourceRange.aspectMask = aspect_mask;
+		create_info.subresourceRange.baseMipLevel = 0;
+		create_info.subresourceRange.levelCount = 1;
+		create_info.subresourceRange.baseArrayLayer = 0;
+		create_info.subresourceRange.layerCount = 1;
+
+		check(vkCreateImageView(vk_device, &create_info, nullptr, &out_image_view));
+
+		return {};
+	}
+
 	err_info copy_buffer_to_buffer(VkBuffer dst, VkBuffer src, VkDeviceSize size, VkDeviceSize dst_offset = 0, VkDeviceSize src_offset = 0)
 	{
 		VkCommandBuffer cmd_buffer;
@@ -1701,7 +1843,7 @@ struct hello_vulkan
 		VkImageMemoryBarrier img_barrier{};
 		img_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		img_barrier.image = image;
-		img_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		img_barrier.subresourceRange.aspectMask = format == VK_FORMAT_D32_SFLOAT ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 		img_barrier.subresourceRange.baseMipLevel = 0;
 		img_barrier.subresourceRange.levelCount = 1;
 		img_barrier.subresourceRange.baseArrayLayer = 0;
@@ -1731,6 +1873,14 @@ struct hello_vulkan
 
 			src_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			dst_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		}
+		else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		{
+			img_barrier.srcAccessMask = 0;
+			img_barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			dst_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		}
 		else
 			return ERROR(1);
@@ -1783,7 +1933,7 @@ struct hello_vulkan
 	{
 		static och::time start_t = och::time::now();
 
-		float seconds = (och::time::now() - start_t).microseconds() / 1'000'000.0F;
+		float seconds = 0.0F; // (och::time::now() - start_t).microseconds() / 1'000'000.0F;
 
 		uniform_buffer_obj ubo;
 
