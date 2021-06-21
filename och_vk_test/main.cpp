@@ -228,6 +228,14 @@ struct hello_vulkan
 
 	VkImageView vk_depth_image_view = nullptr;
 
+	VkSampleCountFlagBits vk_msaa_samples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkImage vk_colour_image = nullptr;
+
+	VkDeviceMemory vk_colour_image_memory = nullptr;
+
+	VkImageView vk_colour_image_view = nullptr;
+
 	size_t curr_frame = 0;
 
 	bool framebuffer_resized = false;
@@ -287,6 +295,8 @@ struct hello_vulkan
 		check(create_vk_graphics_pipeline());
 
 		check(create_vk_command_pool());
+
+		check(create_vk_colour_resources());
 
 		check(create_vk_depth_resources());
 
@@ -511,6 +521,8 @@ struct hello_vulkan
 
 			vk_physical_device = dev;
 
+			vk_msaa_samples = query_max_msaa_samples();
+
 			break;
 		}
 
@@ -715,23 +727,33 @@ struct hello_vulkan
 	{
 		VkAttachmentDescription color_attachment{};
 		color_attachment.format = vk_swapchain_format;
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.samples = vk_msaa_samples;
 		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depth_attachment{};
 		depth_attachment.format = VK_FORMAT_D32_SFLOAT;
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.samples = vk_msaa_samples;
 		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription color_attachment_resolve{};
+		color_attachment_resolve.format = vk_swapchain_format;
+		color_attachment_resolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment_resolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment_resolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment_resolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment_resolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 		VkAttachmentReference color_ref{};
 		color_ref.attachment = 0;
@@ -741,11 +763,16 @@ struct hello_vulkan
 		depth_ref.attachment = 1;
 		depth_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		VkAttachmentReference color_resolve_ref{};
+		color_resolve_ref.attachment = 2;
+		color_resolve_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &color_ref;
 		subpass.pDepthStencilAttachment = &depth_ref;
+		subpass.pResolveAttachments = &color_resolve_ref;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -755,7 +782,7 @@ struct hello_vulkan
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-		VkAttachmentDescription attachment_descs[]{ color_attachment, depth_attachment };
+		VkAttachmentDescription attachment_descs[]{ color_attachment, depth_attachment, color_attachment_resolve };
 
 		VkRenderPassCreateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -867,7 +894,7 @@ struct hello_vulkan
 		VkPipelineMultisampleStateCreateInfo multisample_info{};
 		multisample_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisample_info.sampleShadingEnable = VK_FALSE;
-		multisample_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisample_info.rasterizationSamples = vk_msaa_samples;
 		multisample_info.minSampleShading = 1.0F;
 		multisample_info.pSampleMask = nullptr;
 		multisample_info.alphaToCoverageEnable = VK_FALSE;
@@ -964,9 +991,20 @@ struct hello_vulkan
 		return {};
 	}
 
+	err_info create_vk_colour_resources()
+	{
+		VkFormat colour_format = vk_swapchain_format;
+
+		check(allocate_image(vk_swapchain_extent.width, vk_swapchain_extent.height, colour_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_colour_image, vk_colour_image_memory, vk_msaa_samples));
+
+		check(allocate_image_view(vk_colour_image, colour_format, VK_IMAGE_ASPECT_COLOR_BIT, vk_colour_image_view));
+
+		return {};
+	}
+
 	err_info create_vk_depth_resources()
 	{
-		check(allocate_image(vk_swapchain_extent.width, vk_swapchain_extent.height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_depth_image, vk_depth_image_memory));
+		check(allocate_image(vk_swapchain_extent.width, vk_swapchain_extent.height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_depth_image, vk_depth_image_memory, vk_msaa_samples));
 
 		check(allocate_image_view(vk_depth_image, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, vk_depth_image_view));
 
@@ -981,7 +1019,7 @@ struct hello_vulkan
 
 		for (size_t i = 0; i != vk_swapchain_views.size(); ++i)
 		{
-			VkImageView attachments[]{ vk_swapchain_views[i], vk_depth_image_view };
+			VkImageView attachments[]{ vk_colour_image_view, vk_depth_image_view, vk_swapchain_views[i] };
 
 			VkFramebufferCreateInfo create_info{};
 			create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -1058,7 +1096,7 @@ struct hello_vulkan
 
 		check(allocate_image(header.width, header.height, VK_FORMAT_B8G8R8A8_SRGB, 
 			                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-			                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_texture_image, vk_texture_image_memory, mip_levels));
+			                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_texture_image, vk_texture_image_memory, VK_SAMPLE_COUNT_1_BIT, mip_levels));
 
 
 		check(transition_image_layout(vk_texture_image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_levels));
@@ -1463,9 +1501,11 @@ struct hello_vulkan
 
 		check(create_vk_swapchain());
 
-		check(get_vk_swapchain_views());
-
 		check(create_vk_depth_resources());
+
+		check(create_vk_colour_resources());
+
+		check(get_vk_swapchain_views());
 
 		check(create_vk_render_pass());
 
@@ -1498,6 +1538,12 @@ struct hello_vulkan
 		}
 
 		vkDeviceWaitIdle(vk_device);
+
+		vkDestroyImageView(vk_device, vk_colour_image_view, nullptr);
+
+		vkDestroyImage(vk_device, vk_colour_image, nullptr);
+
+		vkFreeMemory(vk_device, vk_colour_image_memory, nullptr);
 
 		for (auto& framebuffer : vk_swapchain_framebuffers)
 			vkDestroyFramebuffer(vk_device, framebuffer, nullptr);
@@ -1714,6 +1760,30 @@ struct hello_vulkan
 		return ERROR(1);
 	}
 
+	VkSampleCountFlagBits query_max_msaa_samples()
+	{
+		VkPhysicalDeviceProperties props;
+
+		vkGetPhysicalDeviceProperties(vk_physical_device, &props);
+
+		VkSampleCountFlags compat = props.limits.framebufferDepthSampleCounts & props.limits.framebufferColorSampleCounts;
+
+		if (compat & VK_SAMPLE_COUNT_64_BIT)
+			return VK_SAMPLE_COUNT_64_BIT;
+		if (compat & VK_SAMPLE_COUNT_32_BIT)
+			return VK_SAMPLE_COUNT_32_BIT;
+		if (compat & VK_SAMPLE_COUNT_16_BIT)
+			return VK_SAMPLE_COUNT_16_BIT;
+		if (compat & VK_SAMPLE_COUNT_8_BIT)
+			return VK_SAMPLE_COUNT_8_BIT;
+		if (compat & VK_SAMPLE_COUNT_4_BIT)
+			return VK_SAMPLE_COUNT_4_BIT;
+		if (compat & VK_SAMPLE_COUNT_2_BIT)
+			return VK_SAMPLE_COUNT_2_BIT;
+
+		return VK_SAMPLE_COUNT_1_BIT;
+	}
+
 	err_info allocate_buffer(VkDeviceSize bytes, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags property_flags, VkBuffer& out_buffer, VkDeviceMemory& out_buffer_memory, VkSharingMode share_mode = VK_SHARING_MODE_EXCLUSIVE, uint32_t queue_family_cnt = 0, const uint32_t* queue_family_ptr = nullptr)
 	{
 		VkBufferCreateInfo buffer_info{};
@@ -1746,7 +1816,7 @@ struct hello_vulkan
 		return {};
 	}
 
-	err_info allocate_image(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage_flags, VkMemoryPropertyFlags property_flags, VkImage& out_image, VkDeviceMemory& out_image_memory, uint32_t mip_levels = 1, VkSharingMode share_mode = VK_SHARING_MODE_EXCLUSIVE, uint32_t queue_family_cnt = 0, const uint32_t* queue_family_ptr = nullptr)
+	err_info allocate_image(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage_flags, VkMemoryPropertyFlags property_flags, VkImage& out_image, VkDeviceMemory& out_image_memory, VkSampleCountFlagBits sample_cnt = VK_SAMPLE_COUNT_1_BIT, uint32_t mip_levels = 1, VkSharingMode share_mode = VK_SHARING_MODE_EXCLUSIVE, uint32_t queue_family_cnt = 0, const uint32_t* queue_family_ptr = nullptr)
 	{
 		VkImageCreateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1760,7 +1830,7 @@ struct hello_vulkan
 		create_info.tiling = tiling;
 		create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		create_info.usage = usage_flags;
-		create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+		create_info.samples = sample_cnt;
 		create_info.flags = 0;
 		create_info.sharingMode = share_mode;
 		create_info.queueFamilyIndexCount = queue_family_cnt;
@@ -2030,7 +2100,7 @@ struct hello_vulkan
 	{
 		static och::time start_t = och::time::now();
 
-		float seconds = (och::time::now() - start_t).microseconds() / 1'000'000.0F;
+		float seconds = 0; // (och::time::now() - start_t).microseconds() / 1'000'000.0F;
 
 		uniform_buffer_obj ubo;
 
