@@ -93,9 +93,9 @@ struct swapchain_support_details
 
 struct uniform_buffer_obj
 {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 projection;
+	och::mat4 model;
+	och::mat4 view;
+	och::mat4 projection;
 };
 
 struct vertex
@@ -644,6 +644,8 @@ struct hello_vulkan
 			chosen_extent.height = static_cast<uint32_t>(height);
 		}
 
+		och::print("width: {}; height: {}\n\n", chosen_extent.width, chosen_extent.height);
+
 		uint32_t chosen_image_count = swapchain_details.capabilites.minImageCount + 1;
 
 		if (swapchain_details.capabilites.maxImageCount && chosen_image_count > swapchain_details.capabilites.maxImageCount)
@@ -989,8 +991,6 @@ struct hello_vulkan
 			create_info.layers = 1;
 
 			check(vkCreateFramebuffer(vk_device, &create_info, nullptr, &vk_swapchain_framebuffers[i]));
-
-
 		}
 
 		return {};
@@ -1104,9 +1104,11 @@ struct hello_vulkan
 		std::string warn, err;
 
 		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "models/viking_room.obj"))
-			return ERROR(1);
+		{
+			och::print("Failed to load .obj File:\n\tWarning: {}\n\tError: {}\n", warn.c_str(), err.c_str());
 
-		och::print("Loading .obj File:\n\tWarning: {}\n\tError: {}\n", warn.c_str(), err.c_str());
+			return ERROR(1);
+		}
 
 		std::unordered_map<vertex, uint32_t> uniqueVertices{};
 
@@ -1449,6 +1451,8 @@ struct hello_vulkan
 
 		check(get_vk_swapchain_views());
 
+		check(create_vk_depth_resources());
+
 		check(create_vk_render_pass());
 
 		check(create_vk_graphics_pipeline());
@@ -1504,17 +1508,17 @@ struct hello_vulkan
 			vkFreeMemory(vk_device, memory, nullptr);
 
 		vkDestroyDescriptorPool(vk_device, vk_descriptor_pool, nullptr);
-	}
-
-	void cleanup()
-	{
-		cleanup_swapchain();
 
 		vkDestroyImageView(vk_device, vk_depth_image_view, nullptr);
 
 		vkDestroyImage(vk_device, vk_depth_image, nullptr);
 
 		vkFreeMemory(vk_device, vk_depth_image_memory, nullptr);
+	}
+
+	void cleanup()
+	{
+		cleanup_swapchain();
 
 		vkDestroySampler(vk_device, vk_texture_sampler, nullptr);
 
@@ -1933,18 +1937,18 @@ struct hello_vulkan
 	{
 		static och::time start_t = och::time::now();
 
-		float seconds = 0.0F; // (och::time::now() - start_t).microseconds() / 1'000'000.0F;
+		float seconds = (och::time::now() - start_t).microseconds() / 1'000'000.0F;
 
 		uniform_buffer_obj ubo;
 
-		ubo.model = glm::rotate(glm::mat4(1.0F), seconds * glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-		//ubo.model = och::mat4::rotate_z(seconds * 1.5708);
+		//ubo.model = glm::rotate(glm::mat4(1.0F), seconds * glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+		ubo.model = och::mat4::rotate_z(seconds * 1.5708);
 
-		ubo.view = glm::lookAt(glm::vec3(2.0F, 2.0F, 2.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-		//ubo.view = och::look_at(och::vec3(2.0F), och::vec3(0.0F), och::vec3(0.0F, 0.0F, 1.0F));
+		// ubo.view = glm::lookAt(glm::vec3(2.0F, 2.0F, 2.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+		ubo.view = och::look_at(och::vec3(2.0F), och::vec3(0.0F), och::vec3(0.0F, 0.0F, 1.0F));
 
-		ubo.projection = glm::perspective(glm::radians(45.0F), static_cast<float>(vk_swapchain_extent.width) / vk_swapchain_extent.height, 0.1F, 10.0F); ubo.projection[1][1] *= -1;
-		//ubo.projection = och::perpective(0.25F, static_cast<float>(vk_swapchain_extent.width) / vk_swapchain_extent.height, 0.1F, 10.0F);;
+		// ubo.projection = glm::perspective(glm::radians(45.0F), static_cast<float>(vk_swapchain_extent.width) / vk_swapchain_extent.height, 0.1F, 10.0F); ubo.projection[1][1] *= -1;
+		ubo.projection = och::perspective(0.785398F, static_cast<float>(vk_swapchain_extent.width) / vk_swapchain_extent.height, 0.1F, 10.0F);
 
 		void* uniform_data;
 
@@ -1960,10 +1964,30 @@ struct hello_vulkan
 
 int main()
 {
+	//glm::mat4 mglm = glm::perspective(0.25F, 1440.0F / 810.0F, 0.1F, 10.0F); mglm[1][1] *= -1;
+	//och::mat4 moch = och::perspective(0.25F, 1440.0F / 810.0F, 0.1F, 10.0F);
+	//
+	////glm::mat4 mglm = glm::scale(glm::translate(glm::mat4(1), { 4.0F, 5.0F, 6.0F }), { 1.0F, 2.0F, 3.0F });
+	////och::mat4 moch = och::mat4::translate(4.0F, 5.0F, 6.0F) * och::mat4::scale(1.0F, 2.0F, 3.0F);
+	//
+	////glm::mat4 mglm(.0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .10, .11, .12, .13, .14, .15);
+	////och::mat4 moch(.0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .10, .11, .12, .13, .14, .15);
+	//
+	//och::print("glm:\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n\n", 
+	//	mglm[0][0], mglm[1][0], mglm[2][0], mglm[3][0], mglm[0][1], mglm[1][1], mglm[2][1], mglm[3][1], mglm[0][2], mglm[1][2], mglm[2][2], mglm[3][2], mglm[0][3], mglm[1][3], mglm[2][3], mglm[3][3]);
+	//
+	//och::print("och:\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n{:8.3>_} {:8.3>_} {:8.3>_} {:8.3>_}\n\n", 
+	//	moch(0, 0), moch(1, 0), moch(2, 0), moch(3, 0), moch(0, 1), moch(1, 1), moch(2, 1), moch(3, 1), moch(0, 2), moch(1, 2), moch(2, 2), moch(3, 2), moch(0, 3), moch(1, 3), moch(2, 3), moch(3, 3));
+	//
+	//if (memcmp(&mglm, &moch, 64))
+	//	och::print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!NOT EQUAL!!!!!!!!!!!!!!!!!!\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+	//else
+	//	och::print("Equal\n\n");
+
 	hello_vulkan vk;
-
+	
 	err_info err = vk.run();
-
+	
 	if (err)
 		och::print("\nError {} on line {}\n", err.errcode, err.line_number);
 	else

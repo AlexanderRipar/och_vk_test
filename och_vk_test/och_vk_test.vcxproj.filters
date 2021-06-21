@@ -74,11 +74,11 @@
     <ClInclude Include="error_handling.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="och_matmath.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="tiny_obj_loader.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\och_lib\och_lib\och_matmath.h">
+      <Filter>och_lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
