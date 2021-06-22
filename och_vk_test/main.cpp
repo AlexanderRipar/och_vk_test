@@ -25,6 +25,12 @@
 
 #define OCH_VALIDATE
 
+#define OCH_ASSET_NAME "viking_room"
+//#define OCH_ASSET_NAME "vase"
+
+#define OCH_ASSET_OFFSET {0.0F, 0.0F, 0.3F}
+#define OCH_ASSET_SCALE 2.0F
+
 VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback_fn(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data)
 {
 	user_data;
@@ -1038,7 +1044,7 @@ struct hello_vulkan
 
 	err_info create_vk_texture_image()
 	{
-		och::mapped_file<bitmap_header> texture_file(och::stringview("textures/viking_room.bmp"), och::fio::access_read, och::fio::open_normal, och::fio::open_fail);
+		och::mapped_file<bitmap_header> texture_file(och::stringview("textures/" OCH_ASSET_NAME ".bmp"), och::fio::access_read, och::fio::open_normal, och::fio::open_fail);
 
 		if (!texture_file)
 			return ERROR(1);
@@ -1155,7 +1161,7 @@ struct hello_vulkan
 		std::vector<tinyobj::material_t> materials;
 		std::string warn, err;
 
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "models/viking_room.obj"))
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, "models/" OCH_ASSET_NAME ".obj"))
 		{
 			och::print("Failed to load .obj File:\n\tWarning: {}\n\tError: {}\n", warn.c_str(), err.c_str());
 
@@ -1195,6 +1201,8 @@ struct hello_vulkan
 		}
 
 		och::print("\tTotal number of vertices loaded: {}\n\tTotal number of indices loaded: {}\n\n", vertices.size(), indices.size());
+
+		normalize_model(vertices, OCH_ASSET_OFFSET, OCH_ASSET_SCALE);
 
 		return {};
 	}
@@ -2100,12 +2108,12 @@ struct hello_vulkan
 	{
 		static och::time start_t = och::time::now();
 
-		float seconds = 0; // (och::time::now() - start_t).microseconds() / 1'000'000.0F;
+		float seconds = (och::time::now() - start_t).microseconds() / 1'000'000.0F;
 
 		uniform_buffer_obj ubo;
 
 		//ubo.model = glm::rotate(glm::mat4(1.0F), seconds * glm::radians(90.0F), glm::vec3(0.0F, 0.0F, 1.0F));
-		ubo.model = och::mat4::rotate_z(seconds * 1.5708F);
+		ubo.model = och::mat4::rotate_z(seconds * 0.785398F);
 
 		// ubo.view = glm::lookAt(glm::vec3(2.0F, 2.0F, 2.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
 		ubo.view = och::look_at(och::vec3(2.0F), och::vec3(0.0F), och::vec3(0.0F, 0.0F, 1.0F));
@@ -2122,6 +2130,46 @@ struct hello_vulkan
 		vkUnmapMemory(vk_device, vk_uniform_buffers_memory[image_idx]);
 
 		return {};
+	}
+
+	void normalize_model(std::vector<vertex>& verts, glm::vec3 center = { 0.0F, 0.0F, 0.0F }, float scale = 2.0F)
+	{
+		float max_x = -INFINITY, max_y = -INFINITY, max_z = -INFINITY, min_x = INFINITY, min_y = INFINITY, min_z = INFINITY;
+
+		for (const auto& v : verts)
+		{
+			if (v.pos.x > max_x)
+				max_x = v.pos.x;
+			if (v.pos.y > max_y)
+				max_y = v.pos.y;
+			if (v.pos.z > max_z)
+				max_z = v.pos.z;
+
+			if (v.pos.x < min_x)
+				min_x = v.pos.x;
+			if (v.pos.y < min_y)
+				min_y = v.pos.y;
+			if (v.pos.z < min_z)
+				min_z = v.pos.z;
+		}
+
+		const float max = fmaxf(fmaxf(max_x, max_y), max_z);
+		const float min = fminf(fminf(min_x, min_y), min_z);
+
+		const float inv_scale = scale / (max - min);
+
+		glm::vec3 offset((max_x + min_x) * 0.5F * inv_scale, (max_y + min_y) * 0.5F * inv_scale, (max_z + min_z) * 0.5F * inv_scale);
+
+		offset -= center;
+
+		och::print("min/max:\nx: {:8.4>_} / {:8.4>_}\ny: {:8.4>_} / {:8.4>_}\nz: {:8.4>_} / {:8.4>_}\nD: {:8.4>_} / {:8.4>_}\n\n", min_x, max_x, min_y, max_y, min_z, max_z, min, max);
+
+		och::print("inverse scale: {}\n\n", inv_scale);
+
+		och::print("offset: ({:8.4>_}, {:8.4>_}, {:8.4>_})\n\n", offset.x, offset.y, offset.z);
+
+		for (auto& v : verts)
+			v.pos = (v.pos * inv_scale) - (offset);
 	}
 };
 
