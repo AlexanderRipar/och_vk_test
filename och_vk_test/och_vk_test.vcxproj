@@ -93,7 +93,8 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <DisableSpecificWarnings>5105</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,8 +125,9 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>5105</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -156,7 +158,8 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <DisableSpecificWarnings>5105</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -187,8 +190,9 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;C:\Users\alex_2\Documents\_Programming\libraries\glfw-3.3.4.bin.WIN64\include;C:\Users\alex_2\source\repos\och_lib\och_lib;C:\Users\alex_2\Documents\_Programming\libraries\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>5105</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -217,6 +221,7 @@ C:\VulkanSDK\1.2.176.1\Bin\glslc.exe C:\Users\alex_2\source\repos\och_vk_test\oc
     <ClCompile Include="..\..\och_lib\och_lib\och_fmt.cpp" />
     <ClCompile Include="..\..\och_lib\och_lib\och_time.cpp" />
     <ClCompile Include="..\..\och_lib\och_lib\och_utf8.cpp" />
+    <ClCompile Include="error_handling.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="och_bmp_header.h" />
   </ItemGroup>

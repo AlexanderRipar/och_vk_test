@@ -31,6 +31,8 @@
 #define OCH_ASSET_OFFSET {0.0F, 0.0F, 0.3F}
 #define OCH_ASSET_SCALE 2.0F
 
+using err_info = och::err_info;
+
 VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback_fn(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data)
 {
 	user_data;
@@ -2198,9 +2200,16 @@ int main()
 	hello_vulkan vk;
 	
 	err_info err = vk.run();
-	
+
 	if (err)
-		och::print("\nError {} on line {}\n", err.errcode, err.line_number);
+	{
+		och::print("An Error occurred!\n");
+
+		auto stack = och::get_errors();
+
+		for (auto e : stack)
+			och::print("Function {} on Line {}: \"{}\"\n\n", e->function, e->line_num, e->call);
+	}
 	else
 		och::print("\nProcess terminated successfully\n");
 }

@@ -2,35 +2,38 @@
 
 #include <cstdint>
 
+#include "och_range.h"
+
 #include <vulkan/vulkan.h>
 
-struct err_info
+namespace och
 {
-	enum class error_type : uint32_t
+	struct error_context
 	{
-		custom,
-		vkresult,
-		hresult,
-		win32,
+		const char* file;
+		const char* function;
+		const char* call;
+		uint32_t line_num;
 	};
 
-	uint64_t errcode;
-	error_type errtype;
-	uint32_t line_number;
+	struct err_info
+	{
+		bool is_bad = false;
 
-	err_info(VkResult rst, uint32_t line) noexcept : errcode{ static_cast<uint64_t>(rst) }, errtype{ error_type::vkresult }, line_number{ line } {};
+		err_info(VkResult rst, const error_context& ctx) noexcept;
 
-	err_info(uint64_t rst, uint32_t line) noexcept : errcode{ rst }, errtype{ error_type::custom }, line_number{ line } {}
+		err_info(uint64_t rst, const error_context& ctx) noexcept;
 
-	err_info() noexcept : errcode{}, errtype{ error_type::custom }, line_number{} {}
+		err_info(err_info rst, const error_context& ctx) noexcept;
 
-	operator bool() const noexcept { return errcode != 0; }
-};
+		err_info() noexcept = default;
 
-err_info check_(VkResult error, uint32_t line) noexcept { return { error, line }; }
+		operator bool() const noexcept;
+	};
 
-err_info check_(err_info error, uint32_t line) noexcept { return error; line; }
+	och::range<const error_context*> get_errors() noexcept;
 
-#define check(macro_error_cause) { if (err_info macro_defined_result = check_((macro_error_cause), static_cast<uint32_t>(__LINE__))) return macro_defined_result; };
+#define check(macro_error_cause) {static constexpr och::error_context ctx{__FILE__, __FUNCTION__, #macro_error_cause, __LINE__}; if(och::err_info macro_result = och::err_info(macro_error_cause, ctx)) return macro_result; }
 
-#define ERROR(num) err_info(static_cast<uint64_t>(num), __LINE__)
+#define ERROR(num) och::err_info(static_cast<uint64_t>(num), och::error_context{__FILE__, __FUNCTION__, #num, __LINE__})
+}
