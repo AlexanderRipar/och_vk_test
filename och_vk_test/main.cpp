@@ -9,7 +9,7 @@
 #include "och_fio.h"
 #include "och_time.h"
 
-#include "error_handling.h"
+#include "och_error_handling.h"
 #include "och_bmp_header.h"
 #include "och_matmath.h"
 
@@ -2205,7 +2205,7 @@ int main()
 	{
 		och::print("An Error occurred!\n");
 
-		auto stack = och::get_errors();
+		auto stack = och::get_stacktrace();
 
 		for (auto e : stack)
 			och::print("Function {} on Line {}: \"{}\"\n\n", e->function, e->line_num, e->call);

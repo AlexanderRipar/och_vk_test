@@ -39,7 +39,7 @@
     <ClCompile Include="och_bmp_header.h">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="error_handling.cpp">
+    <ClCompile Include="och_error_handling.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,14 +74,14 @@
     <ClInclude Include="..\..\och_lib\och_lib\och_utf8.h">
       <Filter>och_lib</Filter>
     </ClInclude>
-    <ClInclude Include="error_handling.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="tiny_obj_loader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\och_lib\och_lib\och_matmath.h">
       <Filter>och_lib</Filter>
+    </ClInclude>
+    <ClInclude Include="och_error_handling.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

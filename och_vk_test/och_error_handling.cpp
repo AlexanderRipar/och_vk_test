@@ -1,23 +1,10 @@
-#include "error_handling.h"
-
-#include <cstdint>
-
-#include <vulkan/vulkan.h>
+#include "och_error_handling.h"
 
 namespace och
 {
-
 	struct error_dump
 	{
 		static constexpr uint32_t max_call_stack_depth = 16;
-
-		enum class error_type : uint32_t
-		{
-			custom,
-			vkresult,
-			hresult,
-			win32,
-		};
 
 		const error_context* call_stack[max_call_stack_depth];
 
@@ -69,9 +56,21 @@ namespace och
 
 	thread_local error_dump error_data;
 
-	och::range<const error_context*> get_errors() noexcept
+
+
+	och::range<const error_context*> get_stacktrace() noexcept
 	{
 		return { error_data.call_stack, error_data.call_stack_depth };
+	}
+
+	uint64_t och::get_errcode() noexcept
+	{
+		return error_data.errcode;
+	}
+
+	och::error_type och::get_errtype() noexcept
+	{
+		return error_data.errtype;
 	}
 
 	err_info::err_info(VkResult rst, const error_context& ctx) noexcept

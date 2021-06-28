@@ -3,11 +3,22 @@
 #include <cstdint>
 
 #include "och_range.h"
+#include "och_utf8.h"
 
 #include <vulkan/vulkan.h>
 
+#include <comdef.h>
+
 namespace och
 {
+	enum class error_type : uint32_t
+	{
+		custom,
+		hresult,
+		win32,
+		vkresult,
+	};
+
 	struct error_context
 	{
 		const char* file;
@@ -31,7 +42,11 @@ namespace och
 		operator bool() const noexcept;
 	};
 
-	och::range<const error_context*> get_errors() noexcept;
+	och::range<const error_context*> get_stacktrace() noexcept;
+
+	uint64_t get_errcode() noexcept;
+
+	error_type get_errtype() noexcept;
 
 #define check(macro_error_cause) {static constexpr och::error_context ctx{__FILE__, __FUNCTION__, #macro_error_cause, __LINE__}; if(och::err_info macro_result = och::err_info(macro_error_cause, ctx)) return macro_result; }
 
